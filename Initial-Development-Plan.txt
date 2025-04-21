@@ -1,0 +1,29 @@
+Initial Development Plan
+
+ 1. Parallel Implementation- 
+Use OpenMP for parallelizing independent vertex-level computations within each machine.
+
+- Use MPI to distribute the workload (e.g., ranges of trees or subsets of nodes) across multiple machines.
+
+- Combine both for a hybrid model where MPI handles inter-node and OpenMP handles intra-node
+parallelism.
+
+ 2. Performance & Scalability Testing
+- Test on Bubble-Sort Networks of increasing size.
+
+- Measure execution time, speedup, and scalability.
+
+- Perform both strong and weak scaling experiments.
+
+ 3. Documentation & Reporting- 
+Document the approach, parallelization strategy, and performance results.
+
+- Maintain code, results, and progress updates on GitHub.
+
+- Include meaningful commit messages and a brief project summary.
+
+ 4. Demo Preparation- 
+Prepare scripts or commands to demonstrate your implementation.
+
+- Clearly show the impact of parallelization using performance results.
+
