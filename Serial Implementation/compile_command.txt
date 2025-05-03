@@ -1,0 +1,1 @@
+g++ -std=c++17 -O2 serial_new.cpp -o mist_bubblesort
