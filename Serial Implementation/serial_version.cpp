@@ -100,9 +100,20 @@ string permToString(const vector<int>& p) {
     return s;
 }
 
-vector<int> swapAdjacent(const vector<int>& v, int pos) {
+vector<int> swapAdjacent(const vector<int>& v, int symbol) {
+    // Find the position of the given symbol in the permutation, then swap it with its successor
+    int n = v.size();
     vector<int> u = v;
-    swap(u[pos - 1], u[pos]);
+    // locate index j where v[j] == symbol
+    int j = -1;
+    for (int idx = 0; idx < n; ++idx) {
+        if (v[idx] == symbol) { j = idx; break; }
+    }
+    if (j < 0 || j >= n-1) {
+        // symbol not found or already at last position—no change
+        return u;
+    }
+    std::swap(u[j], u[j+1]);
     return u;
 }
 
@@ -114,28 +125,28 @@ vector<int> findPosition(const vector<int>& v, int t, int n) {
     int vn1 = v[n - 2];
     if (vn1 == t || vn1 == n - 1) {
         int r;
-        for (r = n - 1; r >= 1; --r) if (v[r - 1] != r) break;
-        return swapAdjacent(v, r);
+        for (r = n - 1; r >= 0; --r) if (v[r] != r+1) break;
+        return swapAdjacent(v, r+1);
     }
     return swapAdjacent(v, t);
 }
 
 vector<int> parent1(const vector<int>& v, int t, int n) {
     int vn = v[n - 1];
+    int vn1 = v[n - 2];
     vector<int> p;
     vector<int> root(n);
     iota(root.begin(), root.end(), 1);
 
     if (vn == n) {
         if (t != n - 1) p = findPosition(v, t, n);
-        else p = swapAdjacent(v, vn - 1);
+        else p = swapAdjacent(v, vn1);
     } else {
-        int vn1 = v[n - 2];
-        if (vn == n - 1 && vn1 == n && swapAdjacent(v, n - 1) != root) {
-            if (t == 1) p = swapAdjacent(v, n - 1);
+        if (vn == n - 1 && vn1 == n && swapAdjacent(v, n) != root) {
+            if (t == 1) p = swapAdjacent(v, n);
             else p = swapAdjacent(v, t - 1);
         } else {
-            if (vn == t) p = swapAdjacent(v, n - 1);
+            if (vn == t) p = swapAdjacent(v, n);
             else p = swapAdjacent(v, t);
         }
     }
