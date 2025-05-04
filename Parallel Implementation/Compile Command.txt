@@ -1,0 +1,2 @@
+mpicxx -fopenmp -O2 parallel.cpp -o parallel
+mpirun -np 2 ./parallel 9
