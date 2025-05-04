@@ -86,14 +86,7 @@ This project is licensed under the MIT License – see the [LICENSE](LICENSE) fi
 
 ---
 
-## 🎖️ Acknowledgements
-
-- Tom Preston-Werner’s advice on writing READMEs first inspired this structure.
-- The [Standard Readme](https://github.com/RichardLitt/standard-readme) template for best practices.
-
----
-
 ## 📬 Contact
 
-Muhammad Sarmad • [GitHub Profile](https://github.com/MuhammadSarmad091) 
-Muhammad Umar Hassan • [GitHub Profile](https://github.com/Umar1-1assan) 
+- Muhammad Sarmad • [GitHub Profile](https://github.com/MuhammadSarmad091) 
+- Muhammad Umar Hassan • [GitHub Profile](https://github.com/Umar1-1assan) 
