@@ -4,22 +4,74 @@
 using namespace std;
 
 // Hybrid MPI+OpenMP construction of n-1 independent spanning trees (ISTs)
-// of bubble-sort network B_n.  Each MPI rank computes a subset of trees;
-// within each rank, OpenMP parallelizes over (tree,vertex) pairs.
+// of bubble-sort network B_n, using compact data types to reduce memory.
 
-// Global storage for permutations, preprocessing, and identity root
-static vector<vector<int>> perms;
-static vector<vector<int>> pos;
-static vector<int> firstWrong;
-static vector<int> root;
+static vector< vector<uint8_t> > perms;      // all vertices, each permutation symbol in [1..n]
+static vector< vector<uint8_t> > pos;        // pos[v][symbol] = index of symbol in perms[v]
+static vector<uint8_t> firstWrong;           // firstWrong[v] = first wrong-from-right position, 1-based
+static vector<uint8_t> root;                 // identity permutation [1..n]
 
-// Function prototypes
-vector<vector<int>> generatePermutations(int n);
-string permToString(const vector<int>& p);
-void preprocess(int n);
-vector<int> swapAdjacent(int vIdx, int symbol);
-vector<int> findPosition(int vIdx, int t, int n);
-vector<int> parent1(int vIdx, int t, int n);
+vector< vector<uint8_t> > generatePermutations(int n) {
+    vector<uint8_t> base(n);
+    iota(base.begin(), base.end(), 1);
+    vector<vector<uint8_t>> all;
+    do all.push_back(base);
+    while(next_permutation(base.begin(), base.end()));
+    return all;
+}
+
+string permToString(const vector<uint8_t>& p) {
+    string s;
+    s.reserve(p.size());
+    for (uint8_t x : p) s.push_back(char('0' + x));
+    return s;
+}
+
+
+
+void preprocess(int n) {
+    size_t N = perms.size();
+    for (size_t v = 0; v < N; ++v) {
+        auto &P = perms[v];
+        for (int j = 0; j < n; ++j)
+            pos[v][ P[j] ] = (uint8_t)j;
+            int r;
+            for (r = n - 1; r >= 0; --r) if (P[r] != r+1) break;
+        firstWrong[v] = (r <= 0 ? 1 : (uint8_t)r);
+    }
+}
+
+vector<uint8_t> swapAdjacent(size_t vIdx, uint8_t symbol) {
+    auto v = perms[vIdx];
+    int j = pos[vIdx][symbol];
+    if (j < 0 || j + 1 >= (int)v.size()) return v;
+    swap(v[j], v[j+1]);
+    return v;
+}
+
+vector<uint8_t> findPosition(size_t vIdx, int t, int n) {
+    auto v = perms[vIdx];
+    auto u = swapAdjacent(vIdx, (uint8_t)t);
+    if (t == 2 && u == root) return swapAdjacent(vIdx, (uint8_t)(t-1));
+    uint8_t vn1 = v[n-2];
+    if (vn1 == t || vn1 == n-1) return swapAdjacent(vIdx, (uint8_t)(firstWrong[vIdx] + 1));
+    return u;
+}
+
+vector<uint8_t> parent1(size_t vIdx, int t, int n) {
+    auto v = perms[vIdx];
+    uint8_t vn = v[n-1], vn1 = v[n-2];
+    if (vn == n) {
+        return (t != n-1 ? findPosition(vIdx, t, n)
+                         : swapAdjacent(vIdx, vn1));
+    }
+    if (vn == n-1 && vn1 == n && swapAdjacent(vIdx, (uint8_t)n) != root) {
+        return (t == 1 ? swapAdjacent(vIdx, (uint8_t)n)
+                       : swapAdjacent(vIdx, (uint8_t)(t-1)));
+    }
+    return (vn == t ? swapAdjacent(vIdx, (uint8_t)n)
+                    : swapAdjacent(vIdx, (uint8_t)t));
+}
 
 int main(int argc, char** argv) {
     MPI_Init(&argc, &argv);
@@ -29,173 +81,107 @@ int main(int argc, char** argv) {
 
     if (argc != 2) {
         if (rank == 0) cerr << "Usage: " << argv[0] << " <n (2<=n<=10)>\n";
-        MPI_Finalize();
-        return 1;
+        MPI_Finalize(); return 1;
     }
     int n = stoi(argv[1]);
     if (n < 2 || n > 10) {
         if (rank == 0) cerr << "n must be in range [2..10]\n";
-        MPI_Finalize();
-        return 1;
+        MPI_Finalize(); return 1;
     }
 
-    // Generate and store all permutations of size n
+    // Generate permutations and setup
     perms = generatePermutations(n);
-    int N = perms.size();
-
-    // Prepare identity root globally
+    size_t N = perms.size();
     root.resize(n);
     iota(root.begin(), root.end(), 1);
-
-    // Preprocess per-vertex information
-    pos.assign(N, vector<int>(n+1));
+    pos.assign(N, vector<uint8_t>(n+1));
     firstWrong.assign(N, 1);
     preprocess(n);
 
-    // Map permutation string to index
-    unordered_map<string, int> indexOf;
+    unordered_map<string,int> indexOf;
     indexOf.reserve(N);
-    for (int i = 0; i < N; i++) {
-        indexOf[ permToString(perms[i]) ] = i;
-    }
+    for (size_t i = 0; i < N; ++i)
+        indexOf[ permToString(perms[i]) ] = (int)i;
 
-    // Determine tree assignment per MPI rank
     int T = n - 1;
     int per = T / size, rem = T % size;
-    int start_t, end_t;
-    if (rank < rem) {
-        start_t = rank * (per + 1) + 1;
-        end_t = start_t + per;
-    } else {
-        start_t = rem * (per + 1) + (rank - rem) * per + 1;
-        end_t = start_t + per - 1;
-    }
+    int start_t = (rank < rem ? rank*(per+1)+1 : rem*(per+1)+(rank-rem)*per+1);
+    int end_t   = (rank < rem ? start_t+per : start_t+per-1);
     vector<int> assigned_t;
-    for (int t = start_t; t <= end_t; t++) assigned_t.push_back(t);
+    for (int t = start_t; t <= end_t; ++t) assigned_t.push_back(t);
 
-    // Local children lists for assigned trees
-    vector<vector<vector<int>>> children_local(assigned_t.size(), vector<vector<int>>(N));
+    size_t M = assigned_t.size() * N;
+    vector<tuple<int,uint32_t,uint32_t>> edges;
 
-    // OpenMP parallel over (tree,vertex)
-    omp_set_num_threads(3);
-    int M = assigned_t.size() * N;
-    vector<tuple<int,int,int>> threadEdges;
     #pragma omp parallel
     {
-        vector<tuple<int,int,int>> buf;
-        #pragma omp for schedule(static)
-        for (int i = 0; i < M; i++) {
-            int localIdx = i / N;
-            int vIdx     = i % N;
-            if (vIdx == indexOf[ permToString(root) ]) continue;
-            int t = assigned_t[localIdx];
-            int pIdx = indexOf[ permToString(parent1(vIdx, t, n)) ];
-            buf.emplace_back(localIdx, pIdx, vIdx);
+        vector<tuple<int,uint32_t,uint32_t>> buf;
+        #pragma omp for nowait
+        for (size_t i = 0; i < M; ++i) {
+            int li = i / N;
+            uint32_t vIdx = i % N;
+            if (vIdx == (uint32_t)indexOf[permToString(root)]) continue;
+            int t = assigned_t[li];
+            vector<uint8_t> p = parent1(vIdx, t, n);
+            uint32_t pIdx = indexOf[ permToString(p) ];
+            buf.emplace_back(li, pIdx, vIdx);
         }
         #pragma omp critical
-        threadEdges.insert(threadEdges.end(), buf.begin(), buf.end());
-    }
-    // Build local children from threadEdges
-    for (auto &e : threadEdges) {
-        int li,p,v; tie(li,p,v) = e;
-        children_local[li][p].push_back(v);
+        edges.insert(edges.end(), buf.begin(), buf.end());
     }
 
-    // MPI gather to root
+    // Build local and send to root
     if (rank == 0) {
-        vector<vector<vector<int>>> children_global(T, vector<vector<int>>(N));
-        // copy own
-        for (int i = 0; i < assigned_t.size(); i++)
-            children_global[assigned_t[i]-1] = children_local[i];
+        vector<vector<vector<uint32_t>>> children_global(T, vector<vector<uint32_t>>(N));
+        // own
+        for (auto &e : edges) {
+            int li; uint32_t p,v;
+            tie(li,p,v) = e;
+            int t = assigned_t[li] - 1;
+            children_global[t][p].push_back(v);
+        }
         // receive others
-        for (int src = 1; src < size; src++) {
-            int pstart, pend;
-            if (src < rem) { pstart = src*(per+1)+1; pend = pstart+per; }
-            else { pstart = rem*(per+1)+(src-rem)*per+1; pend = pstart+per-1; }
-            for (int t = pstart; t <= pend; t++) {
+        for (int src = 1; src < size; ++src) {
+            int pst = (src < rem ? src*(per+1)+1 : rem*(per+1)+(src-rem)*per+1);
+            int pen = (src < rem ? pst+per : pst+per-1);
+            for (int t = pst; t <= pen; ++t) {
                 int tIdx = t-1;
-                int count;
-                MPI_Recv(&count,1,MPI_INT,src,t, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                vector<int> buf(2*count);
-                MPI_Recv(buf.data(),2*count,MPI_INT,src,t+T, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-                for (int k=0; k<count; k++) {
+                int cnt;
+                MPI_Recv(&cnt,1,MPI_INT,src,t, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                vector<uint32_t> buf(2*cnt);
+                MPI_Recv(buf.data(),2*cnt,MPI_UINT32_T,src,t+T, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                for (int k=0; k<cnt; ++k)
                     children_global[tIdx][ buf[2*k] ].push_back(buf[2*k+1]);
-                }
             }
         }
-        // Export global to DOT
-        for (int t=1; t<=T; t++) {
+        // export
+        for (int t=1; t<=T; ++t) {
             ofstream dot("Tn_"+to_string(t)+".dot");
             dot<<"digraph T"<<n<<"_"<<t<<" {\n  rankdir=TB;\n";
-            for (int p=0; p<N; p++) for (int c: children_global[t-1][p])
-                dot<<"  \""<<permToString(perms[p])<<"\" -> \""<<permToString(perms[c])<<"\";\n";
+            for (uint32_t p=0; p<N; ++p)
+                for (auto c: children_global[t-1][p])
+                    dot<<"  \""<<permToString(perms[p])<<"\" -> \""<<permToString(perms[c])<<"\";\n";
             dot<<"}\n";
         }
     } else {
-        // send local to root
-        for (int i=0; i<assigned_t.size(); i++) {
-            int t = assigned_t[i], tIdx = t-1;
-            vector<int> buf;
-            for (int p=0; p<N; p++) for (int v: children_local[i][p]) {
-                buf.push_back(p); buf.push_back(v);
-            }
-            int cnt=buf.size()/2;
-            MPI_Send(&cnt,1,MPI_INT,0,t, MPI_COMM_WORLD);
-            MPI_Send(buf.data(),2*cnt,MPI_INT,0,t+T, MPI_COMM_WORLD);
+        // send edges
+        vector<vector<uint32_t>> buf(assigned_t.size());
+        vector<int> cnt(assigned_t.size());
+        for (auto &e : edges) {
+            int li; uint32_t p,v;
+            tie(li,p,v) = e;
+            buf[li].push_back(p);
+            buf[li].push_back(v);
+        }
+        for (int i=0; i<assigned_t.size(); ++i) {
+            int t = assigned_t[i];
+            cnt[i] = buf[i].size()/2;
+            MPI_Send(&cnt[i],1,MPI_INT,0,t, MPI_COMM_WORLD);
+            MPI_Send(buf[i].data(),2*cnt[i],MPI_UINT32_T,0,t+T, MPI_COMM_WORLD);
         }
     }
+
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;
-}
-
-vector<vector<int>> generatePermutations(int n) {
-    vector<int> base(n); iota(base.begin(),base.end(),1);
-    vector<vector<int>> all;
-    do all.push_back(base);
-    while(next_permutation(base.begin(),base.end()));
-    return all;
-}
-
-string permToString(const vector<int>& p) {
-    string s;
-    for(int x:p) s.push_back(char('0'+x));
-    return s;
-}
-
-void preprocess(int n) {
-    int N = perms.size();
-    for (int vIdx = 0; vIdx < N; vIdx++) {
-        const vector<int> &v = perms[vIdx];
-        // positions of each symbol
-        for (int j = 0; j < n; j++) {
-            pos[vIdx][ v[j] ] = j;    // 0-based index
-        }
-        // first wrong-from-right (1-based)
-        int r = n;
-        for (r = n - 1; r >= 0; --r) if (v[r] != r+1) break;
-        firstWrong[vIdx] = (r<=0?1:r);
-    }
-}
-
-vector<int> swapAdjacent(int vIdx,int symbol){
-    auto v=perms[vIdx]; int j=pos[vIdx][symbol];
-    if(j<0||j+1>=v.size()) return v;
-    swap(v[j],v[j+1]); return v;
-}
-
-vector<int> findPosition(int vIdx,int t,int n){
-    auto v=perms[vIdx], u=swapAdjacent(vIdx,t);
-    if(t==2&&u==root) return swapAdjacent(vIdx,t-1);
-    int vn1=v[n-2];
-    if(vn1==t||vn1==n-1) return swapAdjacent(vIdx, firstWrong[vIdx]+1);
-    return u;
-}
-
-vector<int> parent1(int vIdx,int t,int n){
-    auto v=perms[vIdx]; int vn=v[n-1], vn1=v[n-2];
-    if(vn==n) return (t!=n-1?findPosition(vIdx,t,n):swapAdjacent(vIdx,vn1));
-    if(vn==n-1&&vn1==n && swapAdjacent(vIdx,n)!=root)
-        return (t==1?swapAdjacent(vIdx,n):swapAdjacent(vIdx,t-1));
-    return (vn==t?swapAdjacent(vIdx,n):swapAdjacent(vIdx,t));
 }
