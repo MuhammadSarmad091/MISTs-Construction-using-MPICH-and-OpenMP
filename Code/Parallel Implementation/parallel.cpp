@@ -27,16 +27,14 @@ string permToString(const vector<uint8_t>& p) {
     return s;
 }
 
-
-
 void preprocess(int n) {
     size_t N = perms.size();
     for (size_t v = 0; v < N; ++v) {
         auto &P = perms[v];
         for (int j = 0; j < n; ++j)
             pos[v][ P[j] ] = (uint8_t)j;
-            int r;
-            for (r = n - 1; r >= 0; --r) if (P[r] != r+1) break;
+        int r;
+        for (r = n - 1; r >= 0; --r) if (P[r] != r+1) break;
         firstWrong[v] = (r <= 0 ? 1 : (uint8_t)r);
     }
 }
@@ -78,6 +76,9 @@ int main(int argc, char** argv) {
     int rank, size;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
+
+    // start timing
+    double t_start = MPI_Wtime();
 
     if (argc != 2) {
         if (rank == 0) cerr << "Usage: " << argv[0] << " <n (2<=n<=10)>\n";
@@ -155,6 +156,7 @@ int main(int argc, char** argv) {
             }
         }
         // export
+        
         for (int t=1; t<=T; ++t) {
             ofstream dot("Tn_"+to_string(t)+".dot");
             dot<<"digraph T"<<n<<"_"<<t<<" {\n  rankdir=TB;\n";
@@ -163,6 +165,7 @@ int main(int argc, char** argv) {
                     dot<<"  \""<<permToString(perms[p])<<"\" -> \""<<permToString(perms[c])<<"\";\n";
             dot<<"}\n";
         }
+            
     } else {
         // send edges
         vector<vector<uint32_t>> buf(assigned_t.size());
@@ -182,6 +185,16 @@ int main(int argc, char** argv) {
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
+
+    // end timing
+    double t_end = MPI_Wtime();
+    double local_elapsed = t_end - t_start;
+    double max_elapsed;
+    MPI_Reduce(&local_elapsed, &max_elapsed, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+    if (rank == 0) {
+        cout << "Time taken (longest): " << max_elapsed << " seconds\n";
+    }
+
     MPI_Finalize();
     return 0;
 }
