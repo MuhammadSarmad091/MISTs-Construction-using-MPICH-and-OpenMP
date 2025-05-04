@@ -62,38 +62,38 @@ Before building and running the parallel version, ensure your system has:
   ```bash
   mpicxx -version
   ```
-## OpenMP  
+- OpenMP  
 Enabled in your C++ compiler (usually via the `-fopenmp` flag in `g++`/`mpic++`). :contentReference[oaicite:0]{index=0}
 
-## g++ / mpic++  
+- g++ / mpicxx  
 C++ compilers that support OpenMP and MPI:  
   ```bash
   g++ --version
-  mpic++ --version
+  mpicxx --version
   ```
 
 ---
 
 ## 🚀 Contributing
 
-Contributions, issues and feature requests are welcome! Please take a look at the [Contributing Guidelines](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests. :contentReference[oaicite:0]{index=0}
+Contributions, issues and feature requests are welcome! Please take a look at the [Contributing Guidelines](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
 
 ---
 
 ## 📝 License
 
-This project is licensed under the MIT License – see the [LICENSE](LICENSE) file for details. :contentReference[oaicite:1]{index=1}
+This project is licensed under the MIT License – see the [LICENSE](LICENSE) file for details.
 
 ---
 
 ## 🎖️ Acknowledgements
 
-- Tom Preston-Werner’s advice on writing READMEs first inspired this structure. :contentReference[oaicite:2]{index=2}
-- The [Standard Readme](https://github.com/RichardLitt/standard-readme) template for best practices. :contentReference[oaicite:3]{index=3}
+- Tom Preston-Werner’s advice on writing READMEs first inspired this structure.
+- The [Standard Readme](https://github.com/RichardLitt/standard-readme) template for best practices.
 
 ---
 
 ## 📬 Contact
 
-Muhammad Sarmad • [GitHub Profile](https://github.com/MuhammadSarmad091) • [email protected] :contentReference[oaicite:4]{index=4}
-
+Muhammad Sarmad • [GitHub Profile](https://github.com/MuhammadSarmad091) 
+Muhammad Umar Hassan • [GitHub Profile](https://github.com/Umar1-1assan) 
