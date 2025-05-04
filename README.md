@@ -30,10 +30,70 @@ These slides provide a concise overview of the problem, solution, algorithm desi
 
 **Folder:** `Code/Serial Implementation`
 
-- **File:** `code.cpp`  
+- **File:** `serial_new.cpp`  
   Contains the serial (single-threaded) implementation of the MIST construction algorithm.
 
 - **Compile & Run:**
   ```bash
-  g++ code.cpp -o serial.out
+  g++ -std=c++17 -O2 serial_new.cpp -o mist_bubblesort
   ./serial.out
+  ```
+
+## 🔹 Parallel Implementation
+
+**Folder:** `Code/Parallel Implementation`
+
+- **File:** `parallel.cpp`  
+  Contains the parallel implementation using both OpenMP (for shared-memory parallelism) and MPICH (for distributed-memory MPI).
+
+### Compile (MPICH + OpenMP)
+  ```bash
+    mpicxx -fopenmp -O2 parallel.cpp -o parallel
+    mpirun -np 2 ./parallel 9
+  ```
+
+## ⚙️ Dependencies & Pre-installed Libraries
+
+Before building and running the parallel version, ensure your system has:
+
+- **MPICH**  
+  For MPI (Message Passing Interface) support.  
+  Check installation with:
+  ```bash
+  mpicxx -version
+  ```
+## OpenMP  
+Enabled in your C++ compiler (usually via the `-fopenmp` flag in `g++`/`mpic++`). :contentReference[oaicite:0]{index=0}
+
+## g++ / mpic++  
+C++ compilers that support OpenMP and MPI:  
+  ```bash
+  g++ --version
+  mpic++ --version
+  ```
+
+---
+
+## 🚀 Contributing
+
+Contributions, issues and feature requests are welcome! Please take a look at the [Contributing Guidelines](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests. :contentReference[oaicite:0]{index=0}
+
+---
+
+## 📝 License
+
+This project is licensed under the MIT License – see the [LICENSE](LICENSE) file for details. :contentReference[oaicite:1]{index=1}
+
+---
+
+## 🎖️ Acknowledgements
+
+- Tom Preston-Werner’s advice on writing READMEs first inspired this structure. :contentReference[oaicite:2]{index=2}
+- The [Standard Readme](https://github.com/RichardLitt/standard-readme) template for best practices. :contentReference[oaicite:3]{index=3}
+
+---
+
+## 📬 Contact
+
+Muhammad Sarmad • [GitHub Profile](https://github.com/MuhammadSarmad091) • [email protected] :contentReference[oaicite:4]{index=4}
+
