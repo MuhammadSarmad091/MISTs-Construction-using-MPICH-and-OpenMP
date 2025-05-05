@@ -2,7 +2,7 @@
 
 ## 📽️ Presentation
 
-The `Presentation/` folder contains the final presentation materials for this project:
+The `Deliverable1/Presentation/` folder contains the final presentation materials for this project:
 
 - **MISTs in Bubble-Sort (PDF).pdf** – A PDF version of the presentation slides for quick viewing.  
 - **MISTs in Bubble-Sort (PPT).ppt** – The original editable PowerPoint file.
@@ -11,16 +11,13 @@ These slides provide a concise overview of the problem, solution, algorithm desi
 
 ---
 
-## 📁 Repository Main Files
+## 📁 Deliverable1 Files
 
 - **Extracted_keypoints.docx**  
   Contains summarized key points and insights extracted from the research paper, serving as a quick reference.
 
 - **Research_Paper.pdf**  
   The original research paper that forms the basis of this project.
-
-- **Initial_Development_Plan.txt**  
-  A brief outline of the initial development strategy. (will be modified later)
 
 ---
 
@@ -63,7 +60,7 @@ Before building and running the parallel version, ensure your system has:
   mpicxx -version
   ```
 - OpenMP  
-Enabled in your C++ compiler (usually via the `-fopenmp` flag in `g++`/`mpic++`). :contentReference[oaicite:0]{index=0}
+Enabled in your C++ compiler (usually via the `-fopenmp` flag in `g++`/`mpicxx`).
 
 - g++ / mpicxx  
 C++ compilers that support OpenMP and MPI:  
