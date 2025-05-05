@@ -86,7 +86,3 @@ This project is licensed under the MIT License – see the [LICENSE](LICENSE) fi
 
 ---
 
-## 📬 Contact
-
-- Muhammad Sarmad • [GitHub Profile](https://github.com/MuhammadSarmad091) 
-- Muhammad Umar Hassan • [GitHub Profile](https://github.com/Umar1-1assan) 
